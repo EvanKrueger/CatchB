@@ -9,7 +9,7 @@ import math
 import os.path
 import platform
 import random
-from ctypes import * # eyetrackka (What??)
+from ctypes import * # eyetrackka (What?)
 
 import numpy as np
 import pandas as pd
@@ -844,11 +844,15 @@ class Experiment(viz.EventClass):
         NaN = float('NaN') # Why? - is this for Pandas?
 
         # Only write data is the experiment is ongoing
+        # Are these conditionals required?
+        # In Progress = time between trial ending and next trial starting
         if self.enableWritingToLog is False or self.inProgress is False:
             return
 
-        self.calibrationFrameCounter = self.calibrationFrameCounter + 1
-
+        # Why? Calibrations are also recorded but denoted by trial numbers 1000+
+        self.calibrationFrameCounter += 1
+        # Stops logging when frame counter is > 100 frames, which is max captured
+        # per fixation in the calibration process
         if (calibTools.calibrationInProgress == True and
                 self.calibrationFrameCounter > self.totalCalibrationFrames):
             self.enableWritingToLog = False
@@ -866,25 +870,19 @@ class Experiment(viz.EventClass):
         else:
             calibrationPoint_XYZ = [NaN, NaN, NaN]
 
-        currentSample = self.config.eyeTracker.getLastSample()
-
         # Gather racquet data
         paddlePos_XYZ = []
         paddleQuat_XYZW = []
-        #paddleAngVel_XYZ = []
-
         if self.room.paddle:
             paddlePos_XYZ = self.room.paddle.node3D.getPosition()
             paddleMat = self.room.paddle.node3D.getMatrix().data
             paddleQuat_XYZW = self.room.paddle.node3D.getMatrix().getQuat()
         else:
-            paddlePos
-            _XYZ = [NaN, NaN, NaN]
+            paddlePos_XYZ = [NaN, NaN, NaN]
             paddleQuat_XYZW = [NaN, NaN, NaN, NaN]
 
         # Gather ball data
         theBall = self.currentTrial.ballObj
-
         if theBall:
             ballPos_XYZ = theBall.node3D.getPosition(viz.ABS_GLOBAL)
             ballVel_XYZ = theBall.getVelocity()
@@ -895,6 +893,8 @@ class Experiment(viz.EventClass):
             ballVisible = NaN
 
         # SMI Data
+        currentSample = self.config.eyeTracker.getLastSample()
+        # TODO: Determine if there are really any scenarios wherein this would be false
         if currentSample:
             #smiServerTime = self.config.eyeTracker.getServerTime()
 
@@ -923,10 +923,13 @@ class Experiment(viz.EventClass):
             IPD = currentSample.ipd
 
         else:
+            # TODO: Determine why it would be at all advantageous to do this.
+            # Possible that not using NaN would cause type problems in a list
+            # of otherwise numeric data
             #smiServerTime = [NaN]
             cycEyeOnScreen_XY = [NaN, NaN]
             cycEyeInHead_XYZ = [NaN, NaN, NaN]
-            cycEyeBasePoint_XYZ= [NaN, NaN, NaN]
+            cycEyeBasePoint_XYZ = [NaN, NaN, NaN]
 
             rightEyeOnScreen_XY = [NaN, NaN]
             rightEyeInHead_XYZ = [NaN, NaN, NaN]
@@ -938,7 +941,7 @@ class Experiment(viz.EventClass):
 
             leftEyeOnScreen_XY = [NaN, NaN]
             leftEyeInHead_XYZ = [NaN, NaN, NaN]
-            leftEyeBasePoint_XYZ= [NaN, NaN, NaN]
+            leftEyeBasePoint_XYZ = [NaN, NaN, NaN]
             leftEyeScreenDistance = NaN
             leftEyeLensDistance = NaN
             leftPupilRadius = NaN
@@ -1095,7 +1098,7 @@ class Experiment(viz.EventClass):
 
         # TODO: Determine is there is actually any benefit to be gained by
         # using this logging method over Python's core io tools for working
-        # with streams¶.
+        # with streams.
 
         # seems redundant to cast as dict again
         logging.info(dict(dataDict))
@@ -1112,8 +1115,6 @@ class Experiment(viz.EventClass):
         vizact.onsensordown(self.config.wiimote,wii.BUTTON_1,self.updateCalibrationPoint)
         vizact.onsensordown(self.config.wiimote,wii.BUTTON_2,self.recordCalibrationData)
         vizact.onsensordown(self.config.wiimote,wii.BUTTON_PLUS,self.config.eyeTracker.acceptCalibrationPoint)
-
-
 
         if self.config.use_phasespace:
 
@@ -1161,7 +1162,7 @@ class Experiment(viz.EventClass):
         print('end experiment')
         self.inProgress = False
 
-
+    # TODO: Determine what is the DVR.
     def checkDVRStatus(self):
 
         dvrWriter = self.config.writer
@@ -1341,7 +1342,7 @@ class Experiment(viz.EventClass):
         theRoom.hangar = model
 
     def endTrial(self):
-        global calibTools
+        global calibTools # bad
 
         self.enableWritingToLog = False
         print('End Trial{', self.enableWritingToLog,'}')
